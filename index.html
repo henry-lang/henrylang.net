@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+    <script>
+	// Why are you here lmao
+	function calculateAge(birthdate) {
+	    const now = new Date();
+	    const birthDate = new Date(birthdate);
+	    const diff = now - birthDate; // difference in milliseconds
+
+	    // Calculate age in years with decimals
+	    const ageInYears = diff / (1000 * 60 * 60 * 24 * 365.25);
+	    return ageInYears;
+	}
+	
+	function updateFn() {
+	    document.getElementById("age").innerText = calculateAge("2007-08-19").toFixed(8)
+	    window.requestAnimationFrame(updateFn);
+	}
+
+	window.requestAnimationFrame(updateFn);
+    </script>
+
+    <p>henry langmack's website</p>
+    <p>i'm <span id="age"></span> years old</p>
+    <p>projects</p>
+    <table>
+        <tr>
+            <th>project  </th>
+            <th>launch date  </th>
+        </tr>
+        <tr>
+            <td>hobby shit: games, making programming languages, etc.<br>(having fun)</td>
+            <td>16-22</td>
+        </tr>
+        <tr>
+            <td>competitive programming</td>
+            <td>22-23</td>
+        </tr>
+        <tr>
+            <td>grind clock</td>
+            <td>july 23</td>
+        </tr>
+        <tr>
+            <td>anywaypay</td>
+            <td>dec 23</td>
+        </tr>
+        <tr>
+            <td>cal ai</td>
+            <td>apr 24</td>
+        </tr>
+        <tr>
+            <td>can't tell you</td>
+            <td>jul 24</td>
+        </tr>
+    </table>
+    <p>skills</p>
+    <ul>
+        <li>hacking things together as fast as possible</li>
+        <li>dev - making projects since 9 yrs old </li>
+	<li>kidoyo saved my life</li>
+        <li>drummer by night</li>
+        <li>i'll teach you anything i know</li>
+      </ul>
+    <p>socials</p>
+    <ul>
+        <li><a href="https://www.x.com/henrylangmack" target="_blank">twitter</a></li>
+        <li><a href="https://www.instagram.com/henrylangmack" target="_blank">instagram</a></li>
+        <li><a href="https://www.linkedin.com/in/henrylangmack" target="_blank">linkedin</a></li>
+    </ul>   
+    <p>hit me up <a href="mailto:henry.langmack@gmail.com">henry.langmack@gmail.com</a></p>
+</body>
+</html>
+
+
+
