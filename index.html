@@ -14,11 +14,11 @@
 	}
 	
 	function updateFn() {
-	    document.getElementById("age").innerText = calculateAge("2007-08-19").toFixed(8)
-	    window.requestAnimationFrame(updateFn);
+	    document.getElementById("age").innerText = calculateAge("2007-08-19").toFixed(8);
 	}
 
-	window.requestAnimationFrame(updateFn);
+	window.setInterval(updateFn, 100);
+
     </script>
 
     <p>henry langmack's website</p>
