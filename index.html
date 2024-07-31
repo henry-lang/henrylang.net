@@ -2,33 +2,66 @@
 <html lang="en">
 <head>
     <title>henry langmack</title>
+    <style>
+        @media (max-width: 500px) {
+            html {
+                zoom: 150%;
+            }
+        }
+
+        .wave {
+            display: inline-block;
+            animation: wave-animation 1s infinite;
+        }
+
+        @keyframes wave-animation {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .wave:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .wave:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .wave:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .wave:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .wave:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+    </style>
 </head>
 <body>
-    <style>
-	@media (max-width: 500px) {
-	    html {
-	        zoom: 150%;
-            }
-	}
-    </style>
     <script>
-	// Why are you here lmao
-	function calculateAge(birthdate) {
-	    const now = new Date();
-	    const birthDate = new Date(birthdate);
-	    const diff = now - birthDate; // difference in milliseconds
+        function calculateAge(birthdate) {
+            const now = new Date();
+            const birthDate = new Date(birthdate);
+            const diff = now - birthDate; // difference in milliseconds
 
-	    // Calculate age in years with decimals
-	    const ageInYears = diff / (1000 * 60 * 60 * 24 * 365.25);
-	    return ageInYears;
-	}
-	
-	function updateFn() {
-	    document.getElementById("age").innerText = calculateAge("2007-08-19T21:13:00.000-05:00").toFixed(8);
-	}
+            // Calculate age in years with decimals
+            const ageInYears = diff / (1000 * 60 * 60 * 24 * 365.25);
+            return ageInYears;
+        }
+        
+        function updateFn() {
+            document.getElementById("age").innerText = calculateAge("2007-08-19T21:13:00.000-05:00").toFixed(8);
+        }
 
-	window.setInterval(updateFn, 100);
-	updateFn();
+        window.setInterval(updateFn, 100);
+        updateFn();
     </script>
 
     <p>henry langmack's website</p>
@@ -61,7 +94,7 @@
         </tr>
         <tr>
             <td>can't tell you</td>
-            <td>jul 24</td>
+            <td><span class="wave">?</span><span class="wave">?</span><span class="wave">?</span><span class="wave">?</span><span class="wave">?</span></td>
         </tr>
     </table>
     <p>skills</p>
@@ -80,6 +113,3 @@
     <p>hit me up <a href="mailto:henry.langmack@gmail.com">henry.langmack@gmail.com</a></p>
 </body>
 </html>
-
-
-
