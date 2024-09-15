@@ -55,6 +55,18 @@
             const ageInYears = diff / (1000 * 60 * 60 * 24 * 365.25);
             return ageInYears;
         }
+
+        function setupLastFm() {
+            let user = 'henrylang';
+            let url = 'https://lastfm-last-played.biancarosa.com.br/' + user + '/latest-song';
+            let song = document.querySelector('#song');
+            fetch(url)
+                .then(function (response) {
+                    return response.json()
+                }).then(function (json) {
+                    song.innerHTML = json['track']['name'] + ' - ' + json['track']['artist']['#text'];
+                });
+        }
         
         function updateFn() {
             document.getElementById("age").innerText = calculateAge("2007-08-19T21:13:00.000-05:00").toFixed(8);
@@ -111,5 +123,6 @@
         <li><a href="https://www.linkedin.com/in/henrylangmack" target="_blank">linkedin</a></li>
     </ul>   
     <p>hit me up <a href="mailto:henry.langmack@gmail.com">henry.langmack@gmail.com</a></p>
+    <div id="widget">&#127911; <span id="song">&#8987;</span></div>
 </body>
 </html>
