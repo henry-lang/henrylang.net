@@ -72,9 +72,11 @@
             document.getElementById("age").innerText = calculateAge("2007-08-19T21:13:00.000-05:00").toFixed(8);
         }
 
-        window.setInterval(updateFn, 100);
-        updateFn();
-        setupLastFm();
+        document.addEventListener("DOMContentLoaded", () => {
+            window.setInterval(updateFn, 100);
+            updateFn();
+            setupLastFm();
+        })
     </script>
 
     <p>henry langmack's website</p>
