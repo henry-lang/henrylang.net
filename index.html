@@ -107,6 +107,11 @@
         .currently-listening {
             margin-top: 1.2em;
         }
+
+        #song {
+            opacity: 0;
+            transition: opacity 1s ease-in;
+        }
     </style>
 </head>
 
@@ -131,6 +136,7 @@
                     return response.json()
                 }).then(function (json) {
                     song.innerHTML = (json['track']['name'] + ' - ' + json['track']['artist']['#text']).toLowerCase();
+                    song.style.opacity = 1;
                 });
         }
 
@@ -169,7 +175,7 @@
             <a href="mailto:henry.langmack@gmail.com">henry.langmack@gmail.com</a>
         </div>
         <p class="title currently-listening">currently listening</p>
-        <div id="widget">&#127911; <span id="song">&#8987;</span></div>
+        <div id="widget">&#127911; <span id="song"></span></div>
     </div>
 </body>
 
