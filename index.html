@@ -169,15 +169,21 @@
                     clearInterval(loadingInterval);
                     song.classList.remove('loading-text');
                     
-                    // Set the actual song
-                    song.innerHTML = (json['track']['name'] + ' - ' + json['track']['artist']['#text']).toLowerCase();
-                    song.style.opacity = 1;
+                    // Fade out, then set content and fade in
+                    song.style.opacity = 0;
+                    setTimeout(() => {
+                        song.innerHTML = (json['track']['name'] + ' - ' + json['track']['artist']['#text']).toLowerCase();
+                        song.style.opacity = 1;
+                    }, 150); // Half the transition duration for smooth effect
                 }).catch(function(error) {
                     // Handle error - stop loading animation and show fallback
                     clearInterval(loadingInterval);
                     song.classList.remove('loading-text');
-                    song.innerHTML = 'unable to load current song';
-                    song.style.opacity = 1;
+                    song.style.opacity = 0;
+                    setTimeout(() => {
+                        song.innerHTML = 'unable to load current song';
+                        song.style.opacity = 1;
+                    }, 150);
                 });
         }
 
