@@ -256,7 +256,7 @@ export class MessengerProgram extends Program {
             this.cursorBlink += 0.05;
             if (Math.sin(this.cursorBlink * 6) > 0) {
                 const cx = this._textWidth(this.input);
-                this.surface.setPixel(20, 4 + cx, true);
+                this.surface.drawLine(19, 4 + cx, 27, 4 + cx);
             }
 
             return this.surface;
@@ -301,12 +301,12 @@ export class MessengerProgram extends Program {
 
         // ============ INPUT BAR ============
         this.surface.drawLine(barY, 0, barY, W);
-        this.surface.drawText(this.input, barY + 2, 2);
+        this.surface.drawText(this.input, barY + 3, 2);
 
         this.cursorBlink += 0.05;
         if (Math.sin(this.cursorBlink * 6) > 0) {
             const cx = this._textWidth(this.input);
-            this.surface.setPixel(barY + 2, 2 + cx, true);
+            this.surface.drawLine(barY + 2, 2 + cx, barY + 10, 2 + cx, true);
         }
 
         return this.surface;

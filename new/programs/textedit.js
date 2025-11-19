@@ -12,7 +12,7 @@ export class TextEditProgram extends Program {
             z: 0,
             width: 80,
             height: 50,
-            title: "Text Editor"
+            title: "Text Edit"
         };
 
         this.lines = [""];

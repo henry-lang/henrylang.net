@@ -89,7 +89,7 @@ export class Surface {
     }
 
     // blendMode can either be overwrite or add
-    drawGlyph(id, row, col, blendMode=BlendMode.ADD) {
+    drawGlyph(id, row, col, blendMode=BlendMode.ADD, value=true) {
         if (!this.glyphSet) return;
         const glyph = this.glyphSet.get(id);
         if (!glyph) return;
@@ -100,10 +100,10 @@ export class Surface {
         for (let j = 0; j < gr; j++) {
             for (let i = 0; i < gc; i++) {
                 if (blendMode == BlendMode.OVERWRITE) {
-                    this.setPixel(row + j, col + i, glyph[j][i]);
+                    this.setPixel(row + j, col + i, glyph[j][i] ? value : !value);
                 } else if (blendMode == BlendMode.ADD) {
                     if (glyph[j][i]) {
-                        this.setPixel(row + j, col + i, glyph[j][i]);
+                        this.setPixel(row + j, col + i, glyph[j][i] ? value : !value);
                     }
                 }
             }
@@ -144,7 +144,7 @@ export class Surface {
         }
     }
 
-    drawText(text, row, col, spacing = 1) {
+    drawText(text, row, col, spacing = 1, blendMode=BlendMode.ADD, value=true) {
         if (!this.glyphSet) return;
 
         let x = col;
@@ -159,7 +159,7 @@ export class Surface {
             }
 
             // Draw the glyph
-            this.drawGlyph(code, row, x);
+            this.drawGlyph(code, row, x, blendMode, value);
 
             // Advance cursor by glyph width + spacing
             x += glyph[0].length + spacing;

@@ -4,6 +4,7 @@ import { defaultGlyphSet } from "./glyphs.js"
 import { MusicProgram } from "./programs/music.js";
 import { TextEditProgram } from "./programs/textedit.js";
 import { MessengerProgram } from "./programs/messenger.js";
+import { AppRegistry } from "./programs/registry.js";
 
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl");
@@ -217,14 +218,10 @@ let resizeStartHeight = 0;
 let resizeStartCol = 0;
 let resizeStartRow = 0;
 
-const musicProgram = new MusicProgram();
-musicProgram.systemData.x = 100;
+let menuOpen = false;
+let hoveredMenuIndex = -1;
 
-const textEditProgram = new TextEditProgram();
-
-const messengerProgram = new MessengerProgram();
-
-let runningPrograms = [musicProgram, textEditProgram, messengerProgram];
+let runningPrograms = [];
 
 for(let i = 0; i < runningPrograms.length; i++) {
     runningPrograms[i].initialize();
@@ -259,6 +256,24 @@ function frame() {
     }
 
     screen.drawLine(9, 0, 9, gridW);
+
+    screen.drawRect(0, 0, 9, 29, menuOpen)
+    screen.drawText("Apps", 1, 3, 1, BlendMode.ADD, !menuOpen);
+    if (menuOpen) {
+        let startRow = 2;  // under "Apps"
+        let startCol = 1;
+
+        for (let i = 0; i < AppRegistry.length; i++) {
+            const app = AppRegistry[i];
+            const y = startRow + i * 9 + 8;
+
+            if (i === hoveredMenuIndex) {
+                screen.drawRect(y, startCol, 9, 60, true);
+            }
+
+            screen.drawText(app.name, y + 1, startCol + 2, 1, BlendMode.ADD, i !== hoveredMenuIndex);
+        }
+    }
 
     const now = new Date();
     const currentTime = formatTime(now);
@@ -319,6 +334,23 @@ canvas.addEventListener("mousemove", (e) => {
     const row = Math.floor(mouseY / CELL_SIZE);
     const col = Math.floor(mouseX / CELL_SIZE);
 
+    if (menuOpen) {
+        const menuStart = 10;     // row where first item begins
+        const itemHeight = 9;     // each item is 9 rows tall
+
+        if (row >= menuStart) {
+            const index = Math.floor((row - menuStart) / itemHeight);
+
+            if (index >= 0 && index < AppRegistry.length) {
+                hoveredMenuIndex = index;
+            } else {
+                hoveredMenuIndex = -1;
+            }
+        } else {
+            hoveredMenuIndex = -1;
+        }
+    }
+
     if (isResizing && resizeTarget) {
         const data = resizeTarget.systemData;
 
@@ -354,6 +386,49 @@ canvas.addEventListener("mousedown", (e) => {
 
     const row = Math.floor(mouseY / CELL_SIZE);
     const col = Math.floor(mouseX / CELL_SIZE);
+
+    if (row >= 1 && row <= 7 && col >= 3 && col < 3 + 6*4) { 
+        // "Apps" = 4 letters * ~6px avg width
+        console.log("Menu open")
+        menuOpen = !menuOpen;
+        return;
+    }
+
+    if (menuOpen) {
+        const startRow = 2;
+        const startCol = 1;
+        const itemHeight = 9;
+        const itemWidth  = 60;
+
+        let clickedIndex = -1;
+
+        for (let i = 0; i < AppRegistry.length; i++) {
+            const yTop = startRow + i * itemHeight + 8;
+            const xLeft = startCol;
+
+            if (
+                row >= yTop && row < yTop + itemHeight &&
+                col >= xLeft && col < xLeft + itemWidth
+            ) {
+                clickedIndex = i;
+                break;
+            }
+        }
+
+        if (clickedIndex !== -1) {
+            const app = AppRegistry[clickedIndex].create();
+
+            app.systemData.x = 20 + runningPrograms.length * 4;
+            app.systemData.y = 30 + runningPrograms.length * 4;
+            app.initialize();
+
+            runningPrograms.push(app);
+        }
+
+        menuOpen = false;
+        hoveredMenuIndex = -1;
+        return;
+    }
 
     // GIVE PROGRAMS FIRST CHANCE
     for (let i = runningPrograms.length - 1; i >= 0; i--) {
