@@ -112,6 +112,11 @@
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
+
+        .loading-text {
+            opacity: 0.6;
+            font-family: monospace;
+        }
     </style>
 </head>
 
@@ -127,15 +132,51 @@
             return ageInYears;
         }
 
+        function generateRandomText(length) {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()[]{}|;:,.<>?';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function startLoadingAnimation() {
+            const song = document.querySelector('#song');
+            song.classList.add('loading-text');
+            song.style.opacity = 1;
+            
+            const loadingInterval = setInterval(() => {
+                song.innerHTML = generateRandomText(30);
+            }, 50); // 20 times per second (1000ms / 20 = 50ms)
+            
+            return loadingInterval;
+        }
+
         function setupLastFm() {
             let user = 'henrylang';
             let url = 'https://lastfm-last-played.biancarosa.com.br/' + user + '/latest-song';
             let song = document.querySelector('#song');
+            
+            // Start loading animation
+            const loadingInterval = startLoadingAnimation();
+            
             fetch(url)
                 .then(function (response) {
                     return response.json()
                 }).then(function (json) {
+                    // Clear loading animation
+                    clearInterval(loadingInterval);
+                    song.classList.remove('loading-text');
+                    
+                    // Set the actual song
                     song.innerHTML = (json['track']['name'] + ' - ' + json['track']['artist']['#text']).toLowerCase();
+                    song.style.opacity = 1;
+                }).catch(function(error) {
+                    // Handle error - stop loading animation and show fallback
+                    clearInterval(loadingInterval);
+                    song.classList.remove('loading-text');
+                    song.innerHTML = 'unable to load current song';
                     song.style.opacity = 1;
                 });
         }
@@ -165,17 +206,20 @@
         <p class="title">skills</p>
         <p>&middot; hacking things together as fast as possible</p>
         <p>&middot; dev - making projects since 9 yrs old</p>
-        <p>&middot; drumming</p>
+        <p>&middot; drumming, fl studio, sampling</p>
         <p>&middot; i'll teach you anything i know</p>
         <p class="title">socials</p>
         <div>
             <a href="https://www.x.com/henrylangmack" target="_blank">twitter</a>
             <a href="https://www.instagram.com/henrylangmack" target="_blank">instagram</a>
             <a href="https://www.linkedin.com/in/henrylangmack" target="_blank">linkedin</a>
+            <a href="https://open.spotify.com/user/henry.langmack?si=17092573f7c34f13" target="_blank">spotify</a>
             <a href="mailto:henry.langmack@gmail.com">henry.langmack@gmail.com</a>
         </div>
         <p class="title currently-listening">currently listening</p>
         <div id="widget">&#127911; <span id="song"></span></div>
+        <div style="height: 10px;"></div>
+        <a href="https://open.spotify.com/playlist/6RZksJBw2nYSuijSwnCZaZ?si=47aba327b921481a" target="_blank">liked songs</a>
     </div>
 </body>
 
