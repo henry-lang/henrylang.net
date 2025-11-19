@@ -26,8 +26,8 @@ const firebaseConfig = {
     appId: "1:218457777426:web:d34fcfe05178546af0ffcb"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+initializeApp(firebaseConfig);
+const db = getFirestore();
 
 export class MessengerProgram extends Program {
     constructor() {
@@ -48,15 +48,14 @@ export class MessengerProgram extends Program {
             defaultGlyphSet
         );
 
-        this.messages = [];
         this.username = null;
+        this.messages = [];
 
         this.input = "";
         this.cursorX = 0;
         this.cursorBlink = 0;
         this.hasFocus = false;
 
-        this.db = getFirestore();
         this._setupListener();
     }
 
@@ -68,7 +67,7 @@ export class MessengerProgram extends Program {
 
     _setupListener() {
         const q = query(
-            collection(this.db, "messages"),
+            collection(db, "messages"),
             orderBy("created", "desc"),
             limit(10)
         );
@@ -84,7 +83,7 @@ export class MessengerProgram extends Program {
     async _sendMessage(text) {
         if (!this.username) return;
 
-        await addDoc(collection(this.db, "messages"), {
+        await addDoc(collection(db, "messages"), {
             user: this.username,
             text,
             created: serverTimestamp()
@@ -94,10 +93,9 @@ export class MessengerProgram extends Program {
     onMouseDown(x, y) {
         this.hasFocus = true;
 
-        // Click inside input box
-        if (y >= this.systemData.height - 10) {
-            const before = this.input.slice(0, this.cursorX);
-            this.cursorX = Math.min(before.length, this.input.length);
+        const barH = this.systemData.height - 12;
+        if (y >= barH) {
+            this.cursorX = this.input.length;
             return true;
         }
 
@@ -107,7 +105,7 @@ export class MessengerProgram extends Program {
     onKeyDown(e) {
         if (!this.hasFocus) return false;
 
-        // Prompt for username first
+        // -------- USERNAME ENTRY --------
         if (!this.username) {
             if (e.key.length === 1) {
                 this.input += e.key;
@@ -120,7 +118,9 @@ export class MessengerProgram extends Program {
                 return true;
             }
             if (e.key === "Enter") {
-                this.username = this.input.trim();
+                if (this.input.trim().length > 0) {
+                    this.username = this.input.trim();
+                }
                 this.input = "";
                 this.cursorX = 0;
                 return true;
@@ -128,7 +128,7 @@ export class MessengerProgram extends Program {
             return true;
         }
 
-        // Normal message typing
+        // -------- NORMAL MESSAGE INPUT --------
         if (e.key.length === 1) {
             this.input =
                 this.input.slice(0, this.cursorX) +
@@ -157,6 +157,16 @@ export class MessengerProgram extends Program {
             return true;
         }
 
+        if (e.key === "ArrowLeft") {
+            this.cursorX = Math.max(0, this.cursorX - 1);
+            return true;
+        }
+
+        if (e.key === "ArrowRight") {
+            this.cursorX = Math.min(this.input.length, this.cursorX + 1);
+            return true;
+        }
+
         return false;
     }
 
@@ -170,21 +180,81 @@ export class MessengerProgram extends Program {
         return total;
     }
 
+    _wrapText(str, maxWidthPx) {
+        const words = str.split(" ");
+        const lines = [];
+
+        let current = "";
+        let currentWidth = 0;
+
+        const spaceGlyph = this.surface.glyphSet.get(" ".charCodeAt(0));
+        const spaceWidth = (spaceGlyph ? spaceGlyph[0].length : 3) + 1;
+
+        for (let w of words) {
+            const wordWidth = this._textWidth(w);
+
+            // If single word too long → break into chunks
+            if (wordWidth > maxWidthPx) {
+                if (current.length > 0) {
+                    lines.push(current);
+                    current = "";
+                    currentWidth = 0;
+                }
+
+                let chunk = "";
+                let chunkWidth = 0;
+
+                for (let ch of w) {
+                    const cw = this._textWidth(ch);
+                    if (chunkWidth + cw > maxWidthPx) {
+                        lines.push(chunk);
+                        chunk = ch;
+                        chunkWidth = cw;
+                    } else {
+                        chunk += ch;
+                        chunkWidth += cw;
+                    }
+                }
+
+                if (chunk.length > 0) lines.push(chunk);
+                continue;
+            }
+
+            // Fits on current line
+            if (currentWidth + wordWidth + (current ? spaceWidth : 0) <= maxWidthPx) {
+                if (current.length === 0) {
+                    current = w;
+                    currentWidth = wordWidth;
+                } else {
+                    current += " " + w;
+                    currentWidth += spaceWidth + wordWidth;
+                }
+            } else {
+                // new line
+                lines.push(current);
+                current = w;
+                currentWidth = wordWidth;
+            }
+        }
+
+        if (current.length > 0) lines.push(current);
+
+        return lines;
+    }
+
     frame() {
         this.surface.clear();
 
         const H = this.systemData.height;
         const W = this.systemData.width;
 
-        // -------------- USERNAME MODE --------------
+        // ============ USERNAME MODE ============
         if (!this.username) {
             this.surface.drawText("Enter username:", 10, 4);
             this.surface.drawText(this.input, 20, 4);
 
-            // Draw cursor
             this.cursorBlink += 0.05;
-            const showCursor = Math.sin(this.cursorBlink * 6) > 0;
-            if (showCursor) {
+            if (Math.sin(this.cursorBlink * 6) > 0) {
                 const cx = this._textWidth(this.input);
                 this.surface.setPixel(20, 4 + cx, true);
             }
@@ -192,27 +262,49 @@ export class MessengerProgram extends Program {
             return this.surface;
         }
 
-        // -------------- MESSAGE LIST --------------
-        let y = 2;
+        // ------------------------------------------------------
+        //   NEW MESSAGE RENDERING: bottom-up layout
+        // ------------------------------------------------------
 
-        for (const msg of this.messages) {
-            const txt = `${msg.user}: ${msg.text}`;
-            this.surface.drawText(txt, y, 2);
-            y += 10; // spacing between lines (pixel height)
-        }
-
-        // -------------- INPUT BAR --------------
+        const maxTextWidth = W - 4;
         const barY = H - 12;
 
-        this.surface.drawLine(barY, 0, barY, W);
+        // Collect wrapped lines of ALL messages
+        let wrappedLines = [];
 
+        for (const msg of this.messages) {
+            const text = `${msg.user}: ${msg.text}`;
+            const lines = this._wrapText(text, maxTextWidth);
+
+            // Keep each message grouped
+            wrappedLines.push(...lines, ""); 
+        }
+
+        // Remove last empty line
+        if (wrappedLines.length > 0 && wrappedLines[wrappedLines.length - 1] === "")
+            wrappedLines.pop();
+
+        const lineHeight = 8;
+        const maxVisibleLines = Math.floor((barY - 2) / lineHeight);
+
+        // Take only the bottom-visible chunk
+        const visibleLines = wrappedLines.slice(-maxVisibleLines);
+
+        // Compute starting Y so text hugs bottom
+        let y = barY - visibleLines.length * lineHeight - 2;
+
+        // Draw lines top → bottom
+        for (const line of visibleLines) {
+            this.surface.drawText(line, y, 2);
+            y += lineHeight;
+        }
+
+        // ============ INPUT BAR ============
+        this.surface.drawLine(barY, 0, barY, W);
         this.surface.drawText(this.input, barY + 2, 2);
 
-        // Input cursor
         this.cursorBlink += 0.05;
-        const showCursor = Math.sin(this.cursorBlink * 6) > 0;
-
-        if (showCursor) {
+        if (Math.sin(this.cursorBlink * 6) > 0) {
             const cx = this._textWidth(this.input);
             this.surface.setPixel(barY + 2, 2 + cx, true);
         }
