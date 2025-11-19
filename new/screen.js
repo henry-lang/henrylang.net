@@ -1,8 +1,11 @@
+export const BlendMode = {
+    OVERWRITE: Symbol("OVERWRITE"),
+    ADD: Symbol("ADD")
+}
+
 export class GlyphSet {
     constructor() {
         this.map = new Map();
-        this.width = 8;
-        this.height = 8;
     }
 
     set(id, matrix) {
@@ -14,16 +17,13 @@ export class GlyphSet {
     }
 }
 
-export class Screen {
-    constructor(rows, cols, fadeTime, glyphSet = null) {
+export class Surface {
+    constructor(rows, cols, glyphSet = null) {
         this.rows = rows;
         this.cols = cols;
-        this.fadeTime = fadeTime;
         this.glyphSet = glyphSet;
 
         this.vram = new Uint8Array(rows * cols);
-        this.amount = new Float32Array(rows * cols);
-
         this.clear(false);
     }
 
@@ -62,34 +62,6 @@ export class Screen {
         }
     }
 
-    drawGlyph(id, row, col) {
-        if (!this.glyphSet) return;
-        const glyph = this.glyphSet.get(id);
-        if (!glyph) return;
-
-        const gr = glyph.length;
-        const gc = glyph[0].length;
-
-        for (let j = 0; j < gr; j++) {
-            for (let i = 0; i < gc; i++) {
-                this.setPixel(row + j, col + i, glyph[j][i]);
-            }
-        }
-    }
-
-    drawGlyphs(glyphs, row, col, spacing = 0) {
-        if (!this.glyphSet) return;
-
-        const gw = this.glyphSet.width;
-        for (let i = 0; i < glyphs.length; i++) {
-            this.drawGlyph(
-                glyphs[i],
-                row,
-                col + i * (gw + spacing)
-            );
-        }
-    }
-
     drawLine(y0, x0, y1, x1) {
         let dx = Math.abs(x1 - x0);
         let sx = x0 < x1 ? 1 : -1;
@@ -116,6 +88,92 @@ export class Screen {
         }
     }
 
+    // blendMode can either be overwrite or add
+    drawGlyph(id, row, col, blendMode=BlendMode.ADD) {
+        if (!this.glyphSet) return;
+        const glyph = this.glyphSet.get(id);
+        if (!glyph) return;
+
+        const gr = glyph.length;
+        const gc = glyph[0].length;
+
+        for (let j = 0; j < gr; j++) {
+            for (let i = 0; i < gc; i++) {
+                if (blendMode == BlendMode.OVERWRITE) {
+                    this.setPixel(row + j, col + i, glyph[j][i]);
+                } else if (blendMode == BlendMode.ADD) {
+                    if (glyph[j][i]) {
+                        this.setPixel(row + j, col + i, glyph[j][i]);
+                    }
+                }
+            }
+        }
+    }
+
+    drawGlyphs(glyphs, row, col, spacing = 0) {
+        if (!this.glyphSet) return;
+
+        const gw = this.glyphSet.width;
+        for (let i = 0; i < glyphs.length; i++) {
+            this.drawGlyph(
+                glyphs[i],
+                row,
+                col + i * (gw + spacing)
+            );
+        }
+    }
+
+    blitSurface(source, destRow, destCol) {
+        const srcRows = source.rows;
+        const srcCols = source.cols;
+        const srcVRAM = source.vram;
+
+        for (let r = 0; r < srcRows; r++) {
+            for (let c = 0; c < srcCols; c++) {
+
+                const val = srcVRAM[r * srcCols + c];
+                if (!val) continue;  // skip blank pixels for speed
+
+                this.setPixel(destRow + r, destCol + c, val === 1);
+            }
+        }
+    }
+
+    drawText(text, row, col, spacing = 1) {
+        if (!this.glyphSet) return;
+
+        let x = col;
+
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            const code = ch.charCodeAt(0);
+            const glyph = this.glyphSet.get(code);
+
+            if (!glyph) {
+                continue;
+            }
+
+            // Draw the glyph
+            this.drawGlyph(code, row, x);
+
+            // Advance cursor by glyph width + spacing
+            x += glyph[0].length + spacing;
+        }
+    }
+
+    getVRAM() {
+        return this.vram;
+    }
+}
+
+export class Screen extends Surface {
+    constructor(rows, cols, fadeTime, glyphSet = null) {
+        super(rows, cols, glyphSet);
+
+        this.fadeTime = fadeTime;
+        this.amount = new Float32Array(rows * cols);
+    }
+
     tickFade() {
         const delta = 1.0 / this.fadeTime;
         const N = this.rows * this.cols;
@@ -131,9 +189,5 @@ export class Screen {
 
     getFadeBuffer() {
         return this.amount;
-    }
-
-    getVRAM() {
-        return this.vram;
     }
 }

@@ -1,4 +1,6 @@
-import { Screen, GlyphSet } from "./screen.js"
+import { Program } from "./program.js";
+import { Screen, GlyphSet, BlendMode } from "./screen.js"
+import { defaultGlyphSet } from "./glyphs.js"
 
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl");
@@ -7,20 +9,6 @@ const ext = gl.getExtension("OES_texture_float");
 if (!ext) {
     alert("FLOAT textures not supported on this device.");
 }
-
-const mouseGlyph = [
-    [1,1,1,1,1,1,0,0],
-    [1,1,1,1,1,1,0,0],
-    [1,1,1,1,1,0,0,0],
-    [1,1,1,1,1,0,0,0],
-    [1,1,1,1,1,1,0,0],
-    [1,1,0,0,1,1,1,0],
-    [0,0,0,0,0,1,1,1],
-    [0,0,0,0,0,0,1,1]
-].map(row => row.map(v => v === 1));
-
-const glyphSet = new GlyphSet();
-glyphSet.set(0, mouseGlyph);
 
 const dpr = window.devicePixelRatio || 1;
 
@@ -118,7 +106,7 @@ const gridW = Math.floor(canvas.width  / CELL_SIZE);
 const gridH = Math.floor(canvas.height / CELL_SIZE);
 const pixelCount = gridW * gridH;
 
-const screen = new Screen(gridH, gridW, 20, glyphSet);
+const screen = new Screen(gridH, gridW, 8, defaultGlyphSet);
 screen.drawLine(0, 0, gridH - 1, gridW - 1);
 screen.drawLine(5, 0, 5, gridW - 1);
 screen.drawRect(10, 10, 5, 10, true);
@@ -201,14 +189,37 @@ gl.uniform1i(u_screenTexLoc, 0); // <-- IMPORTANT
 let mouseX = null;
 let mouseY = null;
 
+let runningPrograms = [new Program()];
+
+for(let i = 0; i < runningPrograms.length; i++) {
+    runningPrograms[i].initialize();
+}
+
 function frame() {
     screen.clear(false); // clear VRAM only, not fade
-                         // fade buffer stays as-is!
+                         // fade buffer stays as-is
+
+    runningPrograms.sort((a, b) => b - a)
+    
+    for(let i = 0; i < runningPrograms.length; i++) {
+        const data = runningPrograms[i].systemData;
+        screen.drawLine(data.y, data.x, data.y + data.height + 11, data.x);
+        screen.drawLine(data.y, data.x + data.width + 1, data.y + data.height + 11, data.x + data.width + 1);
+        screen.drawLine(data.y + data.height + 11, data.x, data.y + data.height + 11, data.x + data.width + 1)
+        screen.drawLine(data.y + 10, data.x, data.y + 10, data.x + data.width + 1)
+        screen.drawLine(data.y, data.x, data.y, data.x + data.width + 1)
+        screen.drawText(data.title, data.y + 2, data.x + 2)
+
+        const surface = runningPrograms[i].frame();
+
+        screen.blitSurface(surface, data.y + 11, data.x + 1);
+    }
+
     if(mouseX !== null && mouseY !== null) {
         const row = Math.floor(mouseY / CELL_SIZE);
         const col = Math.floor(mouseX / CELL_SIZE);
 
-        screen.drawGlyph(0, row, col); // glyph 0 = mouse pointer
+        screen.drawGlyph(0, row, col, BlendMode.OVERWRITE); // glyph 0 = mouse pointer
     }
 
     screen.tickFade();
