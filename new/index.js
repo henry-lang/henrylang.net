@@ -377,6 +377,18 @@ canvas.addEventListener("mousemove", (e) => {
         data.x = Math.max(0, Math.min(data.x, gridW - data.width - 2));
         data.y = Math.max(0, Math.min(data.y, gridH - data.height - 12));
     }
+
+    if (runningPrograms.length > 0) {
+        const top = runningPrograms[runningPrograms.length - 1];
+        
+        if (isInsideProgram(top, col, row)) {
+            const { x: lx, y: ly } = getLocalCoords(top, col, row);
+
+            if (top.onMouseMove) {
+                top.onMouseMove(lx, ly);
+            }
+        }
+    }
 });
 
 canvas.addEventListener("mousedown", (e) => {
@@ -508,26 +520,51 @@ canvas.addEventListener("mousedown", (e) => {
     }
 });
 
-window.addEventListener("mouseup", () => {
+window.addEventListener("mouseup", (e) => {
+    // END resize:
     if (isResizing && resizeTarget) {
         const data = resizeTarget.systemData;
-
         resizeTarget.setSize(data.width, data.height);
     }
-
     isResizing = false;
     resizeTarget = null;
 
+    // END dragging:
     isDragging = false;
     dragTarget = null;
+
+    // Also forward mouseup to the top program if inside its window
+    if (runningPrograms.length > 0) {
+        const top = runningPrograms[runningPrograms.length - 1];
+
+        const rect = canvas.getBoundingClientRect();
+        let mx = (e.clientX - rect.left) * dpr;
+        let my = (e.clientY - rect.top) * dpr;
+
+        const row = Math.floor(my / CELL_SIZE);
+        const col = Math.floor(mx / CELL_SIZE);
+
+        if (isInsideProgram(top, col, row)) {
+            const { x, y } = getLocalCoords(top, col, row);
+            if (top.onMouseUp) top.onMouseUp(x, y);
+        }
+    }
 });
 
 window.addEventListener("keydown", (e) => {
+    if(runningPrograms.length == 0) {
+        return;
+    }
+
     const top = runningPrograms[runningPrograms.length - 1];
     if (top.onKeyDown(e)) e.preventDefault();
 });
 
 window.addEventListener("keyup", (e) => {
+    if(runningPrograms.length == 0) {
+        return;
+    }
+
     const top = runningPrograms[runningPrograms.length - 1];
     if (top.onKeyUp(e)) e.preventDefault();
 });
