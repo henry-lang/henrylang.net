@@ -89,7 +89,11 @@ export class Surface {
     }
 
     // blendMode can either be overwrite or add
-    drawGlyph(id, row, col, blendMode=BlendMode.ADD, value=true) {
+    drawGlyph(id, row, col, blendMode=BlendMode.ADD, value=true, scale=1) {
+        if (scale !== 1) {
+            return this.drawGlyphScaled(id, row, col, scale, blendMode, value);
+        }
+
         if (!this.glyphSet) return;
         const glyph = this.glyphSet.get(id);
         if (!glyph) return;
@@ -104,6 +108,37 @@ export class Surface {
                 } else if (blendMode == BlendMode.ADD) {
                     if (glyph[j][i]) {
                         this.setPixel(row + j, col + i, glyph[j][i] ? value : !value);
+                    }
+                }
+            }
+        }
+    }
+
+    drawGlyphScaled(id, row, col, scale = 1, blendMode = BlendMode.ADD, value = true) {
+        if (!this.glyphSet) return;
+        const glyph = this.glyphSet.get(id);
+        if (!glyph) return;
+
+        const gr = glyph.length;
+        const gc = glyph[0].length;
+
+        for (let j = 0; j < gr; j++) {
+            for (let i = 0; i < gc; i++) {
+                if (!glyph[j][i] && blendMode === BlendMode.ADD) continue;
+
+                // top-left of scaled block
+                const baseRow = row + j * scale;
+                const baseCol = col + i * scale;
+
+                for (let dy = 0; dy < scale; dy++) {
+                    for (let dx = 0; dx < scale; dx++) {
+                        if (blendMode === BlendMode.OVERWRITE) {
+                            this.setPixel(baseRow + dy, baseCol + dx, glyph[j][i] ? value : !value);
+                        } else if (blendMode === BlendMode.ADD) {
+                            if (glyph[j][i]) {
+                                this.setPixel(baseRow + dy, baseCol + dx, value);
+                            }
+                        }
                     }
                 }
             }
@@ -144,7 +179,15 @@ export class Surface {
         }
     }
 
-    drawText(text, row, col, spacing = 1, blendMode=BlendMode.ADD, value=true) {
+    drawText(
+        text,
+        row,
+        col,
+        spacing = 1,
+        blendMode = BlendMode.ADD,
+        value = true,
+        scale = 1
+    ) {
         if (!this.glyphSet) return;
 
         let x = col;
@@ -153,16 +196,13 @@ export class Surface {
             const ch = text[i];
             const code = ch.charCodeAt(0);
             const glyph = this.glyphSet.get(code);
+            if (!glyph) continue;
 
-            if (!glyph) {
-                continue;
-            }
+            // Draw the glyph (scaled OR normal based on param)
+            this.drawGlyph(code, row, x, blendMode, value, scale);
 
-            // Draw the glyph
-            this.drawGlyph(code, row, x, blendMode, value);
-
-            // Advance cursor by glyph width + spacing
-            x += glyph[0].length + spacing;
+            // Advance cursor by (glyph width * scale) + spacing
+            x += glyph[0].length * scale + spacing;
         }
     }
 

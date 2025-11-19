@@ -1,9 +1,6 @@
 import { Program } from "./program.js";
-import { Screen, GlyphSet, BlendMode } from "./screen.js"
+import { Screen, BlendMode } from "./screen.js"
 import { defaultGlyphSet } from "./glyphs.js"
-import { MusicProgram } from "./programs/music.js";
-import { TextEditProgram } from "./programs/textedit.js";
-import { MessengerProgram } from "./programs/messenger.js";
 import { AppRegistry } from "./programs/registry.js";
 
 const canvas = document.getElementById("canvas");
@@ -223,11 +220,14 @@ let hoveredMenuIndex = -1;
 
 let runningPrograms = [];
 
+let lastFrameTime = -1;
+
 for(let i = 0; i < runningPrograms.length; i++) {
     runningPrograms[i].initialize();
 }
 
 function frame() {
+    const start = Date.now()
     screen.clear(false);
     
     for(let i = 0; i < runningPrograms.length; i++) {
@@ -262,6 +262,8 @@ function frame() {
     if (menuOpen) {
         let startRow = 2;  // under "Apps"
         let startCol = 1;
+        
+        screen.drawRect(10, 0, startRow + AppRegistry.length * 9 + 8, 60)
 
         for (let i = 0; i < AppRegistry.length; i++) {
             const app = AppRegistry[i];
@@ -305,6 +307,14 @@ function frame() {
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    const end = Date.now()
+    lastFrameTime = end - start;
+    let debugProgram = runningPrograms.find((program) => program.processDebugInfo != undefined)
+
+    if (debugProgram) {
+        debugProgram.processDebugInfo({frameTime: lastFrameTime})
+    }
 
     requestAnimationFrame(frame);
 }
