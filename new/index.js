@@ -1,6 +1,7 @@
 import { Program } from "./program.js";
 import { Screen, GlyphSet, BlendMode } from "./screen.js"
 import { defaultGlyphSet } from "./glyphs.js"
+import { MusicProgram } from "./programs/music.js";
 
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl");
@@ -214,13 +215,10 @@ let resizeStartHeight = 0;
 let resizeStartCol = 0;
 let resizeStartRow = 0;
 
-const a = new Program()
-const b = new Program()
-b.systemData.x += 100
-const c = new Program()
-c.systemData.x += 175
+const musicProgram = new MusicProgram();
+musicProgram.systemData.x = 100;
 
-let runningPrograms = [a, b, c];
+let runningPrograms = [musicProgram];
 
 for(let i = 0; i < runningPrograms.length; i++) {
     runningPrograms[i].initialize();
