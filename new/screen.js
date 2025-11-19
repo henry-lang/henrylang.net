@@ -123,7 +123,7 @@ export class Surface {
         }
     }
 
-    blitSurface(source, destRow, destCol) {
+    blitSurface(source, destRow, destCol, blendMode=BlendMode.ADD) {
         const srcRows = source.rows;
         const srcCols = source.cols;
         const srcVRAM = source.vram;
@@ -132,9 +132,14 @@ export class Surface {
             for (let c = 0; c < srcCols; c++) {
 
                 const val = srcVRAM[r * srcCols + c];
-                if (!val) continue;  // skip blank pixels for speed
 
-                this.setPixel(destRow + r, destCol + c, val === 1);
+                if (blendMode == BlendMode.OVERWRITE) {
+                    this.setPixel(destRow + r, destCol + c, val === 1);
+                } else if (blendMode == BlendMode.ADD) {
+                    if (val === 1) {
+                        this.setPixel(destRow + r, destCol + c, val === 1);
+                    }
+                }
             }
         }
     }

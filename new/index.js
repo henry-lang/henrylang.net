@@ -106,7 +106,7 @@ const gridW = Math.floor(canvas.width  / CELL_SIZE);
 const gridH = Math.floor(canvas.height / CELL_SIZE);
 const pixelCount = gridW * gridH;
 
-const screen = new Screen(gridH, gridW, 8, defaultGlyphSet);
+const screen = new Screen(gridH, gridW, 10, defaultGlyphSet);
 screen.drawLine(0, 0, gridH - 1, gridW - 1);
 screen.drawLine(5, 0, 5, gridW - 1);
 screen.drawRect(10, 10, 5, 10, true);
@@ -189,30 +189,49 @@ gl.uniform1i(u_screenTexLoc, 0); // <-- IMPORTANT
 let mouseX = null;
 let mouseY = null;
 
-let runningPrograms = [new Program()];
+let dragTarget = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let isDragging = false;
+
+const a = new Program()
+const b = new Program()
+b.systemData.x += 100
+const c = new Program()
+c.systemData.x += 175
+
+let runningPrograms = [a, b, c];
 
 for(let i = 0; i < runningPrograms.length; i++) {
     runningPrograms[i].initialize();
 }
 
 function frame() {
-    screen.clear(false); // clear VRAM only, not fade
-                         // fade buffer stays as-is
-
-    runningPrograms.sort((a, b) => b - a)
+    screen.clear(false);
     
     for(let i = 0; i < runningPrograms.length; i++) {
         const data = runningPrograms[i].systemData;
+
+        screen.drawRect(
+            data.y + 1,
+            data.x + 1,
+            9,
+            data.width,
+            false
+        );
+
         screen.drawLine(data.y, data.x, data.y + data.height + 11, data.x);
         screen.drawLine(data.y, data.x + data.width + 1, data.y + data.height + 11, data.x + data.width + 1);
         screen.drawLine(data.y + data.height + 11, data.x, data.y + data.height + 11, data.x + data.width + 1)
         screen.drawLine(data.y + 10, data.x, data.y + 10, data.x + data.width + 1)
         screen.drawLine(data.y, data.x, data.y, data.x + data.width + 1)
+        screen.drawLine(data.y, data.x + data.width - 9, data.y + 10, data.x + data.width - 9);
         screen.drawText(data.title, data.y + 2, data.x + 2)
+        screen.drawGlyph(1, data.y + 2, data.x + data.width - 7)
 
         const surface = runningPrograms[i].frame();
 
-        screen.blitSurface(surface, data.y + 11, data.x + 1);
+        screen.blitSurface(surface, data.y + 11, data.x + 1, BlendMode.OVERWRITE);
     }
 
     if(mouseX !== null && mouseY !== null) {
@@ -249,6 +268,75 @@ canvas.addEventListener("mousemove", (e) => {
     const rect = canvas.getBoundingClientRect();
     mouseX = (e.clientX - rect.left) * dpr;
     mouseY = (e.clientY - rect.top) * dpr;
+
+    const row = Math.floor(mouseY / CELL_SIZE);
+    const col = Math.floor(mouseX / CELL_SIZE);
+
+    if (isDragging && dragTarget) {
+        const data = dragTarget.systemData;
+
+        data.x = col - dragOffsetX;
+        data.y = row - dragOffsetY;
+
+        // Clamp to screen bounds
+        data.x = Math.max(0, Math.min(data.x, gridW - data.width - 2));
+        data.y = Math.max(0, Math.min(data.y, gridH - data.height - 12));
+    }
+});
+
+canvas.addEventListener("mousedown", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = (e.clientX - rect.left) * dpr;
+    mouseY = (e.clientY - rect.top) * dpr;
+
+    const row = Math.floor(mouseY / CELL_SIZE);
+    const col = Math.floor(mouseX / CELL_SIZE);
+
+    // (1) — CHECK X BUTTON FIRST
+    for (let i = runningPrograms.length - 1; i >= 0; i--) {
+        const data = runningPrograms[i].systemData;
+
+        const bx1 = data.x + data.width - 9; // left
+        const bx2 = data.x + data.width + 1; // right
+        const by1 = data.y;                  // top
+        const by2 = data.y + 10;             // bottom
+
+        if (col >= bx1 && col <= bx2 && row >= by1 && row <= by2) {
+            runningPrograms.splice(i, 1);
+            return;
+        }
+    }
+
+    // (2) — CHECK TITLE BAR FOR DRAG
+    // Title bar is from:
+    // row = data.y ... data.y+10
+    // col = data.x ... data.x+data.width+1
+    for (let i = runningPrograms.length - 1; i >= 0; i--) {
+        const data = runningPrograms[i].systemData;
+
+        if (row >= data.y && row <= data.y + 10 &&
+            col >= data.x && col <= data.x + data.width + 1) {
+
+            // Start dragging
+            dragTarget = runningPrograms[i];
+            isDragging = true;
+
+            // Offset so window doesn't jump
+            dragOffsetX = col - data.x;
+            dragOffsetY = row - data.y;
+
+            // Bring window to front
+            const p = runningPrograms.splice(i, 1)[0];
+            runningPrograms.push(p);
+
+            return;
+        }
+    }
+});
+
+window.addEventListener("mouseup", () => {
+    isDragging = false;
+    dragTarget = null;
 });
 
 window.addEventListener("resize", () => handleResize());

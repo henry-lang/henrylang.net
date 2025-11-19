@@ -10,7 +10,7 @@ const defaultSystemData = {
 };
 
 export class Program {
-    constructor(systemData = defaultSystemData) {
+    constructor(systemData = {...defaultSystemData}) {
         this.systemData = systemData
         this.surface = new Surface(this.systemData.height, this.systemData.width)
     }
