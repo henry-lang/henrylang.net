@@ -25,4 +25,12 @@ export class Program {
     frame() {
 
     }
+
+    onMouseDown(x, y) { return false; }
+    onMouseUp(x, y) { return false; }
+    onMouseMove(x, y) { return false; }
+    onMouseDrag(x, y, dx, dy) { return false; }
+
+    onKeyDown(e) { return false; }
+    onKeyUp(e) { return false; }
 }

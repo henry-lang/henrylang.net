@@ -166,6 +166,16 @@ export class Surface {
         }
     }
 
+    drawChar(ch, row, col) {
+        if (!this.glyphSet) return;
+
+        const code = typeof ch === "string" ? ch.charCodeAt(0) : ch;
+        const glyph = this.glyphSet.get(code);
+        if (!glyph) return;
+
+        this.drawGlyph(code, row, col, BlendMode.OVERWRITE);
+    }
+
     getVRAM() {
         return this.vram;
     }

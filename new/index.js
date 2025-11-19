@@ -2,6 +2,8 @@ import { Program } from "./program.js";
 import { Screen, GlyphSet, BlendMode } from "./screen.js"
 import { defaultGlyphSet } from "./glyphs.js"
 import { MusicProgram } from "./programs/music.js";
+import { TextEditProgram } from "./programs/textedit.js";
+import { MessengerProgram } from "./programs/messenger.js";
 
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl");
@@ -218,7 +220,11 @@ let resizeStartRow = 0;
 const musicProgram = new MusicProgram();
 musicProgram.systemData.x = 100;
 
-let runningPrograms = [musicProgram];
+const textEditProgram = new TextEditProgram();
+
+const messengerProgram = new MessengerProgram();
+
+let runningPrograms = [musicProgram, textEditProgram, messengerProgram];
 
 for(let i = 0; i < runningPrograms.length; i++) {
     runningPrograms[i].initialize();
@@ -288,6 +294,23 @@ function frame() {
     requestAnimationFrame(frame);
 }
 
+function getLocalCoords(program, col, row) {
+    return {
+        x: col - program.systemData.x - 1,
+        y: row - program.systemData.y - 11
+    };
+}
+
+function isInsideProgram(program, col, row) {
+    const d = program.systemData;
+    return (
+        col >= d.x + 1 &&
+        col <= d.x + d.width &&
+        row >= d.y + 11 &&
+        row <= d.y + d.height + 11
+    );
+}
+
 canvas.addEventListener("mousemove", (e) => {
     const rect = canvas.getBoundingClientRect();
     mouseX = (e.clientX - rect.left) * dpr;
@@ -331,6 +354,20 @@ canvas.addEventListener("mousedown", (e) => {
 
     const row = Math.floor(mouseY / CELL_SIZE);
     const col = Math.floor(mouseX / CELL_SIZE);
+
+    // GIVE PROGRAMS FIRST CHANCE
+    for (let i = runningPrograms.length - 1; i >= 0; i--) {
+        const p = runningPrograms[i];
+        if (!isInsideProgram(p, col, row)) continue;
+
+        const { x: lx, y: ly } = getLocalCoords(p, col, row);
+        
+        if (p.onMouseDown(lx, ly)) {
+            const bring = runningPrograms.splice(i, 1)[0];
+            runningPrograms.push(bring);
+            return;
+        }
+    }
 
     // (1) — CHECK X BUTTON FIRST
     for (let i = runningPrograms.length - 1; i >= 0; i--) {
@@ -410,6 +447,15 @@ window.addEventListener("mouseup", () => {
     dragTarget = null;
 });
 
+window.addEventListener("keydown", (e) => {
+    const top = runningPrograms[runningPrograms.length - 1];
+    if (top.onKeyDown(e)) e.preventDefault();
+});
+
+window.addEventListener("keyup", (e) => {
+    const top = runningPrograms[runningPrograms.length - 1];
+    if (top.onKeyUp(e)) e.preventDefault();
+});
 
 window.addEventListener("resize", () => handleResize());
 
