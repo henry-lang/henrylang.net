@@ -99,6 +99,19 @@ function compileShader(type, source) {
     return s;
 }
 
+function formatTime(date) {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+
+    // Pad with leading zero if the value is a single digit
+    const formattedHours = String(hours).padStart(2, '0');
+    const formattedMinutes = String(minutes).padStart(2, '0');
+    const formattedSeconds = String(seconds).padStart(2, '0');
+
+    return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+}
+
 handleResize();
 
 const CELL_SIZE = 8;
@@ -194,6 +207,13 @@ let dragOffsetX = 0;
 let dragOffsetY = 0;
 let isDragging = false;
 
+let resizeTarget = null;
+let isResizing = false;
+let resizeStartWidth = 0;
+let resizeStartHeight = 0;
+let resizeStartCol = 0;
+let resizeStartRow = 0;
+
 const a = new Program()
 const b = new Program()
 b.systemData.x += 100
@@ -234,6 +254,12 @@ function frame() {
         screen.blitSurface(surface, data.y + 11, data.x + 1, BlendMode.OVERWRITE);
     }
 
+    screen.drawLine(9, 0, 9, gridW);
+
+    const now = new Date();
+    const currentTime = formatTime(now);
+    screen.drawText(currentTime, 1, gridW - 6 * currentTime.length - 2)
+
     if(mouseX !== null && mouseY !== null) {
         const row = Math.floor(mouseY / CELL_SIZE);
         const col = Math.floor(mouseX / CELL_SIZE);
@@ -272,6 +298,22 @@ canvas.addEventListener("mousemove", (e) => {
     const row = Math.floor(mouseY / CELL_SIZE);
     const col = Math.floor(mouseX / CELL_SIZE);
 
+    if (isResizing && resizeTarget) {
+        const data = resizeTarget.systemData;
+
+        let dCol = col - resizeStartCol;
+        let dRow = row - resizeStartRow;
+
+        data.width = Math.max(5, resizeStartWidth + dCol);
+        data.height = Math.max(5, resizeStartHeight + dRow);
+
+        // Clamp so window doesn’t go offscreen
+        data.width = Math.min(data.width, gridW - data.x - 2);
+        data.height = Math.min(data.height, gridH - data.y - 12);
+
+        return;
+    }
+
     if (isDragging && dragTarget) {
         const data = dragTarget.systemData;
 
@@ -307,6 +349,28 @@ canvas.addEventListener("mousedown", (e) => {
         }
     }
 
+    for (let i = runningPrograms.length - 1; i >= 0; i--) {
+        const data = runningPrograms[i].systemData;
+
+        const handleCol = data.x + data.width + 1;
+        const handleRow = data.y + data.height + 11;
+
+        if (col === handleCol && row === handleRow) {
+            resizeTarget = runningPrograms[i];
+            isResizing = true;
+
+            resizeStartWidth = data.width;
+            resizeStartHeight = data.height;
+            resizeStartCol = col;
+            resizeStartRow = row;
+
+            // Bring to front
+            const p = runningPrograms.splice(i, 1)[0];
+            runningPrograms.push(p);
+            return;
+        }
+    }
+
     // (2) — CHECK TITLE BAR FOR DRAG
     // Title bar is from:
     // row = data.y ... data.y+10
@@ -335,9 +399,19 @@ canvas.addEventListener("mousedown", (e) => {
 });
 
 window.addEventListener("mouseup", () => {
+    if (isResizing && resizeTarget) {
+        const data = resizeTarget.systemData;
+
+        resizeTarget.setSize(data.width, data.height);
+    }
+
+    isResizing = false;
+    resizeTarget = null;
+
     isDragging = false;
     dragTarget = null;
 });
+
 
 window.addEventListener("resize", () => handleResize());
 
