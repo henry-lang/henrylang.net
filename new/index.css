@@ -16,3 +16,8 @@ body {
 body, canvas {
     cursor: none;
 }
+
+* {
+    overflow: hidden;
+    overscroll-behavior: none
+}

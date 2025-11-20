@@ -579,6 +579,23 @@ window.addEventListener("keyup", (e) => {
     if (top.onKeyUp(e)) e.preventDefault();
 });
 
+window.addEventListener("wheel", (e) => {
+    if (runningPrograms.length > 0) {
+        const top = runningPrograms[runningPrograms.length - 1];
+
+        const rect = canvas.getBoundingClientRect();
+        let mx = (e.clientX - rect.left) * dpr;
+        let my = (e.clientY - rect.top) * dpr;
+
+        const row = Math.floor(my / CELL_SIZE);
+        const col = Math.floor(mx / CELL_SIZE);
+
+        if (isInsideProgram(top, col, row)) {
+            if (top.onScroll) top.onScroll(e.deltaY);
+        }
+    }
+});
+
 window.addEventListener("resize", () => handleResize());
 
 window.requestAnimationFrame(frame);
