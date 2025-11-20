@@ -1,6 +1,7 @@
 import { Screen, BlendMode } from "./screen.js"
 import { defaultGlyphSet } from "./glyphs.js"
 import { AppRegistry } from "./programs/registry.js";
+import { BrowserProgram } from "./programs/browser.js";
 
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl");
@@ -218,6 +219,8 @@ let menuOpen = false;
 let hoveredMenuIndex = -1;
 
 let runningPrograms = [];
+
+runningPrograms.push(new BrowserProgram());
 
 let lastFrameTime = -1;
 
