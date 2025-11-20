@@ -1,3 +1,16 @@
+export let globalDebugInfo = {
+    glyphsRendered: 0,
+    linesRendered: 0,
+    rectsRendered: 0,
+    surfaceBlits: 0
+}
+
+export function resetGlobalDebugInfo() {
+    Object.keys(globalDebugInfo).forEach(key => {
+        globalDebugInfo[key] = 0;
+    });
+}
+
 export const BlendMode = {
     OVERWRITE: Symbol("OVERWRITE"),
     ADD: Symbol("ADD")
@@ -55,6 +68,8 @@ export class Surface {
     }
 
     drawRect(y, x, h, w, val) {
+        globalDebugInfo.rectsRendered += 1;
+
         for (let row = y; row < y + h; row++) {
             for (let col = x; col < x + w; col++) {
                 this.setPixel(row, col, val);
@@ -63,6 +78,8 @@ export class Surface {
     }
 
     drawLine(y0, x0, y1, x1) {
+        globalDebugInfo.linesRendered += 1;
+
         let dx = Math.abs(x1 - x0);
         let sx = x0 < x1 ? 1 : -1;
         let dy = -Math.abs(y1 - y0);
@@ -90,6 +107,8 @@ export class Surface {
 
     // blendMode can either be overwrite or add
     drawGlyph(id, row, col, blendMode=BlendMode.ADD, value=true, scale=1) {
+        globalDebugInfo.glyphsRendered += 1;
+
         if (scale !== 1) {
             return this.drawGlyphScaled(id, row, col, scale, blendMode, value);
         }
@@ -159,6 +178,8 @@ export class Surface {
     }
 
     blitSurface(source, destRow, destCol, blendMode=BlendMode.ADD) {
+        globalDebugInfo.surfaceBlits += 1;
+        
         const srcRows = source.rows;
         const srcCols = source.cols;
         const srcVRAM = source.vram;

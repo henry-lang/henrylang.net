@@ -21,7 +21,7 @@ export class DebuggerProgram extends Program {
             defaultGlyphSet
         );
 
-        this.frameTime = null
+        this.debugInfo = null
     }
 
     setSize(w, h) {
@@ -37,14 +37,18 @@ export class DebuggerProgram extends Program {
     frame() {
         this.surface.clear();
 
-        this.surface.drawText(`Frame time: ${this.frameTime}ms`, 1, 1);
+        if(this.debugInfo) {
+            this.surface.drawText(`Frame time: ${this.debugInfo.frameTime}ms`, 1, 1);
+            this.surface.drawText(`Glyphs rendered: ${this.debugInfo.glyphsRendered}`, 9, 1);
+            this.surface.drawText(`Lines rendered: ${this.debugInfo.linesRendered}`, 18, 1);
+            this.surface.drawText(`Rects rendered: ${this.debugInfo.rectsRendered}`, 27, 1);
+            this.surface.drawText(`Surface blits: ${this.debugInfo.surfaceBlits}`, 36, 1);
+        }
 
         return this.surface;
     }
 
     processDebugInfo(debugInfo) {
-        if(debugInfo.frameTime) {
-            this.frameTime = debugInfo.frameTime;
-        }
+        this.debugInfo = debugInfo;
     }
 }

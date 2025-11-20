@@ -1,4 +1,4 @@
-import { Screen, BlendMode } from "./screen.js"
+import { Screen, BlendMode, globalDebugInfo, resetGlobalDebugInfo } from "./screen.js"
 import { defaultGlyphSet } from "./glyphs.js"
 import { AppRegistry } from "./programs/registry.js";
 import { BrowserProgram } from "./programs/browser.js";
@@ -316,7 +316,8 @@ function frame() {
     let debugProgram = runningPrograms.find((program) => program.processDebugInfo != undefined)
 
     if (debugProgram) {
-        debugProgram.processDebugInfo({frameTime: lastFrameTime})
+        debugProgram.processDebugInfo({frameTime: lastFrameTime, ...globalDebugInfo})
+        resetGlobalDebugInfo();
     }
 
     requestAnimationFrame(frame);
