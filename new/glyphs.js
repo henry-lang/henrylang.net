@@ -15,29 +15,30 @@ x..x..
 .x...x.
 .......
 
-xxxxx
-x...x
-x...x
-x...x
-x...x
-x...x
-xxxxx
+.......
+xxxxxx.
+x....x.
+x...xxx
+x....x.
+x......
+x......
+xxxxxx.
 
-xxxxx
-x...x
-x...x
-x...x
-x...x
-x...x
-xxxxx
+.......
+..x....
+.xx....
+xxxxxxx
+.xx....
+..x....
+.......
 
-xxxxx
-x...x
-x...x
-x...x
-x...x
-x...x
-xxxxx
+.......
+....x..
+....xx.
+xxxxxxx
+....xx.
+....x..
+.......
 
 xxxxx
 x...x

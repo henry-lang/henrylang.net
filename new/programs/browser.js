@@ -27,6 +27,9 @@ export class BrowserProgram extends Program {
         this.loading = false;
         this.offsetY = 0;
         this.linkRects = [];
+
+        this.history = [];
+        this.historyIndex = -1;
     }
 
     setSize(w, h) {
@@ -52,8 +55,41 @@ export class BrowserProgram extends Program {
         fetchData();
     }
 
-    initialize() {
+    _navigateTo(newUrl) {
+        // Trim forward history when going to a new place
+        if (this.historyIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.historyIndex + 1);
+        }
+
+        this.history.push(newUrl);
+        this.historyIndex = this.history.length - 1;
+
+        this.url = newUrl;
         this._fetch();
+    }
+
+    _goBack() {
+        if (this.historyIndex > 0) {
+            this.historyIndex--;
+            this.url = this.history[this.historyIndex];
+            this._fetch();
+        }
+    }
+
+    _goForward() {
+        if (this.historyIndex < this.history.length - 1) {
+            this.historyIndex++;
+            this.url = this.history[this.historyIndex];
+            this._fetch();
+        }
+    }
+
+    _reload() {
+        this._fetch();
+    }
+
+    initialize() {
+        this._navigateTo(this.url);
     }
 
     frame() {
@@ -64,18 +100,17 @@ export class BrowserProgram extends Program {
         } else if (this.data) {
             const maxWidth = this.systemData.width - 4;
 
-            let y = 14 - Math.floor(this.offsetY); // below header bar
+            let y = 14 - Math.floor(this.offsetY);
 
             for (const block of this.data) {
                 const scale = block.scale;
                 const lines = this._wrapText(block.text, maxWidth, scale);
 
                 for (const line of lines) {
-                    const lineHeight = 8 * scale + 2;   // 8px tall glyphs + small padding
+                    const lineHeight = 8 * scale + 2;
 
                     this.surface.drawText(line, y, 2, 1, BlendMode.ADD, true, scale);
 
-                    // link underlines...
                     if (block.links.length > 0) {
                         for (const link of block.links) {
                             const before = line.substring(0, link.start);
@@ -97,7 +132,6 @@ export class BrowserProgram extends Program {
                         }
                     }
 
-                    // ⬅️ THIS IS THE FIX
                     y += lineHeight;
                 }
 
@@ -106,8 +140,18 @@ export class BrowserProgram extends Program {
         }
 
         this.surface.drawRect(0, 0, 10, this.systemData.width, false);
-        this.surface.drawLine(10, 0, 10, this.systemData.width);
-        this.surface.drawText(this.url, 1, 16);
+        this.surface.drawLine(9, 0, 9, this.systemData.width);
+        if (this.historyIndex > 0) {
+            this.surface.drawGlyph(3, 1, 1);
+        }
+        if (this.historyIndex < this.history.length - 1) {
+            this.surface.drawGlyph(4, 1, 11);
+        }
+        this.surface.drawGlyph(2, 0, 21);
+        this.surface.drawLine(0, 9, 9, 9);
+        this.surface.drawLine(0, 19, 9, 19);
+        this.surface.drawLine(0, 29, 9, 29);
+        this.surface.drawText(this.url, 1, 31);
 
         return this.surface;
     }
@@ -202,13 +246,29 @@ export class BrowserProgram extends Program {
     }
 
     onMouseDown(x, y) {
-        // Check if click is inside any link rect
+        // RELOAD button rect (x: 11–19, y: 4–12)
+        if (x >= 21 && x <= 31 && y >= 0 && y <= 10) {
+            console.log("click")
+            this._reload();
+            return true;
+        }
+
+        if(x >= 0 && x <= 10 && y >= 0 && y <= 10) {
+            console.log("go back")
+            this._goBack();
+            return true;
+        }
+
+        if(x >= 11 && x <= 20 && y >= 0 && y <= 10) {
+            this._goForward();
+            return true;
+        }
+
         for (const rect of this.linkRects) {
             if (x >= rect.x1 && x <= rect.x2 &&
                 y >= rect.y1 && y <= rect.y2) {
 
-                this.url = rect.url;
-                this._fetch();
+                this._navigateTo(rect.url);
                 return true;
             }
         }

@@ -1,4 +1,3 @@
-import { Program } from "./program.js";
 import { Screen, BlendMode } from "./screen.js"
 import { defaultGlyphSet } from "./glyphs.js"
 import { AppRegistry } from "./programs/registry.js";
@@ -257,7 +256,8 @@ function frame() {
 
     screen.drawLine(9, 0, 9, gridW);
 
-    screen.drawRect(0, 0, 9, 29, menuOpen)
+    screen.drawRect(0, 0, 9, gridW);
+    screen.drawRect(0, 0, 9, 29, menuOpen);
     screen.drawText("Apps", 1, 3, 1, BlendMode.ADD, !menuOpen);
     if (menuOpen) {
         let startRow = 2;  // under "Apps"
@@ -384,8 +384,7 @@ canvas.addEventListener("mousemove", (e) => {
         data.y = row - dragOffsetY;
 
         // Clamp to screen bounds
-        data.x = Math.max(0, Math.min(data.x, gridW - data.width - 2));
-        data.y = Math.max(0, Math.min(data.y, gridH - data.height - 12));
+        data.y = Math.max(9, data.y);
     }
 
     if (runningPrograms.length > 0) {
