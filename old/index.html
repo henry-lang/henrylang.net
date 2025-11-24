@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>henry langmack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Kantumruy+Pro:ital@0;1&display=swap"
+        rel="stylesheet">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            text-align: left;
+            font-family: "Kantumruy Pro", sans-serif;
+        }
+
+        .title {
+            font-family: "DM Serif Text", serif;
+            font-size: 1.1em;
+        }
+
+        small {
+            font-size: 0.7em;
+        }
+
+        .me {
+            font-size: 3em;
+            margin: 0;
+            font-family: "DM Serif Text", serif;
+        }
+
+        body {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                zoom: 75%;
+            }
+        }
+
+        .wave {
+            display: inline-block;
+            animation: wave-animation 1s infinite;
+        }
+
+        @keyframes wave-animation {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .wave:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .wave:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .wave:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .wave:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .wave:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
+        table,
+        p,
+        ul {
+            margin: 0.5em auto;
+        }
+
+        ul {
+            list-style-position: inside;
+            padding: 0;
+
+        }
+
+        li::marker {
+            font-size: 0.4em;
+        }
+
+        .currently-listening {
+            margin-top: 1.2em;
+        }
+
+        #song {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .loading-text {
+            opacity: 0.6;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        function calculateAge(birthdate) {
+            const now = new Date();
+            const birthDate = new Date(birthdate);
+            const diff = now - birthDate; // difference in milliseconds
+
+            // Calculate age in years with decimals
+            const ageInYears = diff / (1000 * 60 * 60 * 24 * 365.25);
+            return ageInYears;
+        }
+
+        function generateRandomText(length) {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()[]{}|;:,.<>?';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function startLoadingAnimation() {
+            const song = document.querySelector('#song');
+            song.classList.add('loading-text');
+            song.style.opacity = 1;
+            
+            const loadingInterval = setInterval(() => {
+                song.innerHTML = generateRandomText(30);
+            }, 50); // 20 times per second (1000ms / 20 = 50ms)
+            
+            return loadingInterval;
+        }
+
+        function setupLastFm() {
+            let user = 'henrylang';
+            let url = 'https://lastfm-last-played.biancarosa.com.br/' + user + '/latest-song';
+            let song = document.querySelector('#song');
+            
+            // Start loading animation
+            const loadingInterval = startLoadingAnimation();
+            
+            fetch(url)
+                .then(function (response) {
+                    return response.json()
+                }).then(function (json) {
+                    // Clear loading animation
+                    clearInterval(loadingInterval);
+                    song.classList.remove('loading-text');
+                    
+                    // Set the actual song
+                    song.innerHTML = (json['track']['name'] + ' - ' + json['track']['artist']['#text']).toLowerCase();
+                    song.style.opacity = 1;
+                }).catch(function(error) {
+                    // Handle error - stop loading animation and show fallback
+                    clearInterval(loadingInterval);
+                    song.classList.remove('loading-text');
+                    song.innerHTML = 'unable to load current song';
+                    song.style.opacity = 1;
+                });
+        }
+
+        function updateFn() {
+            document.getElementById("age").innerText = calculateAge("2007-08-19T21:13:00.000-05:00").toFixed(8);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            window.setInterval(updateFn, 100);
+            updateFn();
+            setupLastFm();
+        })
+    </script>
+
+    <div>
+        <p class="me">henry langmack</p>
+        <p>i'm <span id="age"></span> years old</p>
+        <p class="title">projects</p>
+        <p>hobbies: making games, programming languages, etc.<br><small>16-22</small></p>
+        <p>competitive programming<br><small>22-23</small></p>
+        <p>grind clock<br><small>july 23</small></p>
+        <p>anywaypay<br><small>dec 23</small></p>
+        <p>cal ai<br><small>apr 24</small></p>
+        <p>can't tell you<br><small><span class="wave">?</span><span class="wave">?</span><span
+                    class="wave">?</span><span class="wave">?</span><span class="wave">?</span></small></p>
+        <p class="title">skills</p>
+        <p>&middot; hacking things together as fast as possible</p>
+        <p>&middot; dev - making projects since 9 yrs old</p>
+        <p>&middot; drumming, fl studio, sampling</p>
+        <p>&middot; i'll teach you anything i know</p>
+        <p class="title">socials</p>
+        <div>
+            <a href="https://www.x.com/henrylangmack" target="_blank">twitter</a>
+            <a href="https://www.instagram.com/henrylangmack" target="_blank">instagram</a>
+            <a href="https://www.linkedin.com/in/henrylangmack" target="_blank">linkedin</a>
+            <a href="https://open.spotify.com/user/henry.langmack?si=17092573f7c34f13" target="_blank">spotify</a>
+            <a href="mailto:henry.langmack@gmail.com">henry.langmack@gmail.com</a>
+        </div>
+        <p class="title currently-listening">currently listening</p>
+        <div id="widget">&#127911; <span id="song"></span></div>
+        <div style="height: 10px;"></div>
+        <a href="https://open.spotify.com/playlist/6RZksJBw2nYSuijSwnCZaZ?si=47aba327b921481a" target="_blank">liked songs</a>
+        <a href="/new">new</a>
+    </div>
+</body>
+
+</html>
