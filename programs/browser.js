@@ -22,7 +22,7 @@ export class BrowserProgram extends Program {
             defaultGlyphSet
         );
 
-        this.url = "/new/intro.md"
+        this.url = "/intro.md"
         this.data = null;
         this.loading = false;
         this.offsetY = 0;
