@@ -46,14 +46,14 @@ void main() {
         return;
     }
 
-    // --------- fade value ---------
+    // fade value
     vec2 texUV = (vec2(cell) + 0.5) / u_gridSize;
     float fade = texture2D(u_screenTex, texUV).r;
 
     vec4 fillColor   = mix(u_fillDisabled,   u_fillEnabled,   fade);
     vec4 strokeColor = mix(u_strokeDisabled, u_strokeEnabled, fade);
 
-    // --------- pixel-space coords inside the cell ---------
+    // pixel-space coords inside the cell
     // Compute local pixel coordinates inside this cell:
     vec2 cellUV = uv * u_gridSize - vec2(cell);
 
@@ -198,7 +198,7 @@ gl.uniform4f(
 );
 
 const u_screenTexLoc = gl.getUniformLocation(program, "u_screenTex");
-gl.uniform1i(u_screenTexLoc, 0); // <-- IMPORTANT
+gl.uniform1i(u_screenTexLoc, 0);
 
 let mouseX = null;
 let mouseY = null;
