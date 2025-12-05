@@ -11,8 +11,8 @@ export class IDEProgram extends Program {
             x: 30,
             y: 25,
             z: 0,
-            width: 120,
-            height: 90,
+            width: 200,
+            height: 150,
             title: "IDE"
         };
 
@@ -40,8 +40,10 @@ export class IDEProgram extends Program {
             "    );",
             "}",
             "",
-            "setSize(width, height) {",
-            "    ",
+            "setSize(w, h) {",
+            "    this.systemData.width = w;",
+            "    this.systemData.height = h;",
+            "    this._createSurface();",
             "}",
             "",
             "initialize() {",
