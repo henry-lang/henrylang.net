@@ -1983,6 +1983,14 @@ x...x
 x...x
 .....
 x.x.x
+
+.x...
+.xx..
+.xxx.
+.xxxx
+.xxx.
+.xx..
+.x...
 `
 
 const processedGlyphs = rawGlyphs
@@ -1995,5 +2003,7 @@ let defaultGlyphSet = new GlyphSet()
 for(let i = 0; i < processedGlyphs.length; i++) {
     defaultGlyphSet.set(i, processedGlyphs[i])
 }
+
+export const PLAY_BUTTON_GLYPH = processedGlyphs.length - 1;
 
 export { defaultGlyphSet }

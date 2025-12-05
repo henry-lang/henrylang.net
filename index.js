@@ -220,12 +220,19 @@ let hoveredMenuIndex = -1;
 
 let runningPrograms = [];
 
+const context = {
+    spawn: (program) => {
+        runningPrograms.unshift(program);
+        program.initialize(context);
+    }
+}
+
 runningPrograms.push(new BrowserProgram());
 
 let lastFrameTime = -1;
 
 for(let i = 0; i < runningPrograms.length; i++) {
-    runningPrograms[i].initialize();
+    runningPrograms[i].initialize(context);
 }
 
 function frame() {
@@ -445,7 +452,7 @@ canvas.addEventListener("mousedown", (e) => {
 
             app.systemData.x = 20 + runningPrograms.length * 4;
             app.systemData.y = 30 + runningPrograms.length * 4;
-            app.initialize();
+            app.initialize(context);
 
             runningPrograms.push(app);
         }
@@ -455,21 +462,7 @@ canvas.addEventListener("mousedown", (e) => {
         return;
     }
 
-    // GIVE PROGRAMS FIRST CHANCE
-    for (let i = runningPrograms.length - 1; i >= 0; i--) {
-        const p = runningPrograms[i];
-        if (!isInsideProgram(p, col, row)) continue;
-
-        const { x: lx, y: ly } = getLocalCoords(p, col, row);
-        
-        if (p.onMouseDown(lx, ly)) {
-            const bring = runningPrograms.splice(i, 1)[0];
-            runningPrograms.push(bring);
-            return;
-        }
-    }
-
-    // (1) — CHECK X BUTTON FIRST
+    // (1) — CHECK X BUTTON FIRST (highest priority)
     for (let i = runningPrograms.length - 1; i >= 0; i--) {
         const data = runningPrograms[i].systemData;
 
@@ -484,6 +477,7 @@ canvas.addEventListener("mousedown", (e) => {
         }
     }
 
+    // (2) — CHECK RESIZE HANDLE (second priority)
     for (let i = runningPrograms.length - 1; i >= 0; i--) {
         const data = runningPrograms[i].systemData;
 
@@ -506,7 +500,7 @@ canvas.addEventListener("mousedown", (e) => {
         }
     }
 
-    // (2) — CHECK TITLE BAR FOR DRAG
+    // (3) — CHECK TITLE BAR FOR DRAG
     // Title bar is from:
     // row = data.y ... data.y+10
     // col = data.x ... data.x+data.width+1
@@ -528,6 +522,20 @@ canvas.addEventListener("mousedown", (e) => {
             const p = runningPrograms.splice(i, 1)[0];
             runningPrograms.push(p);
 
+            return;
+        }
+    }
+
+    // (4) — GIVE PROGRAMS CHANCE (after window controls)
+    for (let i = runningPrograms.length - 1; i >= 0; i--) {
+        const p = runningPrograms[i];
+        if (!isInsideProgram(p, col, row)) continue;
+
+        const { x: lx, y: ly } = getLocalCoords(p, col, row);
+        
+        if (p.onMouseDown(lx, ly)) {
+            const bring = runningPrograms.splice(i, 1)[0];
+            runningPrograms.push(bring);
             return;
         }
     }
