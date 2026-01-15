@@ -158,7 +158,7 @@ func streamHandler(ctx Ctx) http.HandlerFunc {
 		if strings.Contains(str, ctx.Email) {
 			ctx.Mixpanel.Track(mpCtx, []*mixpanel.Event{
 				ctx.Mixpanel.NewEvent("email_given", "", map[string]any{
-					"message_dump": string(msgs),
+					"message_dump": msgs,
 				}),
 			})
 		}
