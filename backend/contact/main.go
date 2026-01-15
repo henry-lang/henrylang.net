@@ -134,10 +134,7 @@ func streamHandler(ctx Ctx) http.HandlerFunc {
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	godotenv.Load()
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
