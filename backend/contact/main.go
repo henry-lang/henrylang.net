@@ -66,6 +66,21 @@ func toOpenAIMessages(msgs []ChatMessage, systemPrompt string) ([]openai.ChatCom
 	return out, nil
 }
 
+func withCORS(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		h(w, r)
+	}
+}
+
 func streamHandler(ctx Ctx) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -153,12 +168,11 @@ func main() {
 		SystemPrompt: systemPrompt,
 	}
 
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+	http.HandleFunc("/stream", withCORS(streamHandler(ctx)))
+	http.HandleFunc("/healthz", withCORS(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
-	})
-
-	http.HandleFunc("/stream", streamHandler(ctx))
+	}))
 
 	log.Println("listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
