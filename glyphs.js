@@ -1991,6 +1991,16 @@ x.x.x
 .xxx.
 .xx..
 .x...
+
+........x........
+.......x.x.......
+......x.x.x......
+.....x..x..x.....
+....x...x...x....
+...x.........x...
+..x.....x.....x..
+.x.............x.
+xxxxxxxxxxxxxxxxx
 `
 
 const processedGlyphs = rawGlyphs
@@ -2004,6 +2014,7 @@ for(let i = 0; i < processedGlyphs.length; i++) {
     defaultGlyphSet.set(i, processedGlyphs[i])
 }
 
-export const PLAY_BUTTON_GLYPH = processedGlyphs.length - 1;
+export const PLAY_BUTTON_GLYPH = processedGlyphs.length - 2;
+export const ERROR_GLYPH = processedGraphs.length - 1;
 
 export { defaultGlyphSet }
