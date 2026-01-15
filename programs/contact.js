@@ -151,6 +151,7 @@ export class ContactProgram extends Program {
 
       await this._readSSE(res.body, (event, data) => {
         if (event === "delta") {
+            console.log(`"${data}"`);
           this.messages[serverIndex].content += data;
         } else if (event === "error") {
           this.messages[serverIndex].content += `\n[${data}]`;
@@ -210,7 +211,7 @@ export class ContactProgram extends Program {
         }
 
         if (line.startsWith("data:")) {
-          currentData.push(line.slice(5).trimStart());
+          currentData.push(line.slice(6));
           continue;
         }
       }
