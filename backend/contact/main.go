@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/mixpanel/mixpanel-go"
 	openai "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 )
@@ -16,6 +18,8 @@ import (
 type Ctx struct {
 	Client       *openai.Client
 	SystemPrompt string
+	Email        string
+	Mixpanel     *mixpanel.ApiClient
 }
 
 type Role string
@@ -126,6 +130,8 @@ func streamHandler(ctx Ctx) http.HandlerFunc {
 		})
 		defer stream.Close()
 
+		str := ""
+
 		for {
 			if !stream.Next() {
 				if err := stream.Err(); err != nil && reqCtx.Err() == nil {
@@ -133,7 +139,7 @@ func streamHandler(ctx Ctx) http.HandlerFunc {
 				} else {
 					writeSSE(w, flusher, "done", "ok")
 				}
-				return
+				break
 			}
 
 			chunk := stream.Current()
@@ -142,8 +148,19 @@ func streamHandler(ctx Ctx) http.HandlerFunc {
 			}
 
 			if delta := chunk.Choices[0].Delta.Content; delta != "" {
+				str += delta
 				writeSSE(w, flusher, "delta", delta)
 			}
+		}
+
+		mpCtx := context.Background()
+		msgs, _ := json.Marshal(body.Messages)
+		if strings.Contains(str, ctx.Email) {
+			ctx.Mixpanel.Track(mpCtx, []*mixpanel.Event{
+				ctx.Mixpanel.NewEvent("email_given", "", map[string]any{
+					"message_dump": string(msgs),
+				}),
+			})
 		}
 	}
 }
@@ -161,11 +178,24 @@ func main() {
 		log.Fatal("SYSTEM_PROMPT is not set")
 	}
 
+	email := os.Getenv("EMAIL")
+	if email == "" {
+		log.Fatal("EMAIL is not set")
+	}
+
+	mixpanelProjectToken := os.Getenv("MIXPANEL_PROJECT_TOKEN")
+	if mixpanelProjectToken == "" {
+		log.Fatal("MIXPANEL_PROJECT_TOKEN is not set")
+	}
+
 	client := openai.NewClient(option.WithAPIKey(apiKey))
+	mixpanel := mixpanel.NewApiClient(mixpanelProjectToken)
 
 	ctx := Ctx{
 		Client:       &client,
 		SystemPrompt: systemPrompt,
+		Email:        email,
+		Mixpanel:     mixpanel,
 	}
 
 	http.HandleFunc("/stream", withCORS(streamHandler(ctx)))
