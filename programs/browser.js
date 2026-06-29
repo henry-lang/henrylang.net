@@ -26,6 +26,7 @@ export class BrowserProgram extends Program {
         this.data = null;
         this.loading = false;
         this.offsetY = 0;
+        this.contentHeight = 0;
         this.linkRects = [];
 
         this.history = [];
@@ -94,6 +95,7 @@ export class BrowserProgram extends Program {
 
     frame() {
         this.surface.clear();
+        this.linkRects = [];
 
         if (this.loading) {
             this.surface.drawText("Loading...", 20, 4);
@@ -137,6 +139,8 @@ export class BrowserProgram extends Program {
 
                 y += 4;
             }
+
+            this.contentHeight = y + Math.floor(this.offsetY);
         }
 
         this.surface.drawRect(0, 0, 10, this.systemData.width, false);
@@ -277,7 +281,31 @@ export class BrowserProgram extends Program {
     }
 
     onScroll(deltaY) {
-        this.offsetY += deltaY / 10
-        this.offsetY = Math.max(this.offsetY, 0)
+        const maxScroll = this._maxScroll();
+        const beyondBounds = this.offsetY < 0 || this.offsetY > maxScroll;
+        this.offsetY += (deltaY / 10) * (beyondBounds ? 0.35 : 1);
+        this._clampRubberScroll();
+    }
+
+    tickScrollPhysics() {
+        const maxScroll = this._maxScroll();
+
+        if (this.offsetY < 0) {
+            this.offsetY *= 0.72;
+            if (this.offsetY > -0.05) this.offsetY = 0;
+        } else if (this.offsetY > maxScroll) {
+            this.offsetY = maxScroll + (this.offsetY - maxScroll) * 0.72;
+            if (this.offsetY < maxScroll + 0.05) this.offsetY = maxScroll;
+        }
+    }
+
+    _maxScroll() {
+        return Math.max(0, this.contentHeight - this.systemData.height);
+    }
+
+    _clampRubberScroll() {
+        const maxScroll = this._maxScroll();
+        const limit = Math.max(16, Math.floor(this.systemData.height * 0.35));
+        this.offsetY = Math.max(-limit, Math.min(this.offsetY, maxScroll + limit));
     }
 }

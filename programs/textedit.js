@@ -20,6 +20,7 @@ export class TextEditProgram extends Program {
         this.cursorY = 0;
         this.cursorBlink = 0;
         this.hasFocus = false;
+        this.scrollY = 0;
 
         this._createSurface();
     }
@@ -39,15 +40,7 @@ export class TextEditProgram extends Program {
     }
 
     onMouseDown(x, y) {
-        if (y < 0 || y >= this.lines.length) {
-            this.cursorY = Math.max(0, Math.min(y, this.lines.length - 1));
-            return true;
-        }
-
-        const line = this.lines[y] || "";
-        this.cursorY = y;
-        this.cursorX = Math.max(0, Math.min(x, line.length));
-
+        this._setCursorFromPixel(x, y);
         this.hasFocus = true;
         return true;
     }
@@ -61,6 +54,7 @@ export class TextEditProgram extends Program {
             const after = line.slice(this.cursorX);
             this.lines[this.cursorY] = before + e.key + after;
             this.cursorX++;
+            this._ensureCursorVisible();
             return true;
         }
 
@@ -71,6 +65,7 @@ export class TextEditProgram extends Program {
                     line.slice(0, this.cursorX - 1) +
                     line.slice(this.cursorX);
                 this.cursorX--;
+                this._ensureCursorVisible();
                 return true;
             }
             if (this.cursorY > 0) {
@@ -79,6 +74,7 @@ export class TextEditProgram extends Program {
                 this.lines[this.cursorY - 1] = prev + line;
                 this.lines.splice(this.cursorY, 1);
                 this.cursorY--;
+                this._ensureCursorVisible();
                 return true;
             }
             return true;
@@ -94,6 +90,7 @@ export class TextEditProgram extends Program {
 
             this.cursorY++;
             this.cursorX = 0;
+            this._ensureCursorVisible();
             return true;
         }
 
@@ -103,6 +100,7 @@ export class TextEditProgram extends Program {
                 this.cursorY--;
                 this.cursorX = this.lines[this.cursorY].length;
             }
+            this._ensureCursorVisible();
             return true;
         }
 
@@ -113,6 +111,7 @@ export class TextEditProgram extends Program {
                 this.cursorY++;
                 this.cursorX = 0;
             }
+            this._ensureCursorVisible();
             return true;
         }
 
@@ -121,6 +120,7 @@ export class TextEditProgram extends Program {
                 this.cursorY--;
                 this.cursorX = Math.min(this.cursorX, this.lines[this.cursorY].length);
             }
+            this._ensureCursorVisible();
             return true;
         }
 
@@ -129,20 +129,49 @@ export class TextEditProgram extends Program {
                 this.cursorY++;
                 this.cursorX = Math.min(this.cursorX, this.lines[this.cursorY].length);
             }
+            this._ensureCursorVisible();
             return true;
         }
 
         return false;
     }
 
+    onScroll(deltaY) {
+        const maxScroll = this._maxScroll();
+        const beyondBounds = this.scrollY < 0 || this.scrollY > maxScroll;
+        this.scrollY += (deltaY / 10) * (beyondBounds ? 0.35 : 1);
+        this._clampRubberScroll();
+    }
+
+    tickScrollPhysics() {
+        const maxScroll = this._maxScroll();
+
+        if (this.scrollY < 0) {
+            this.scrollY *= 0.72;
+            if (this.scrollY > -0.05) this.scrollY = 0;
+        } else if (this.scrollY > maxScroll) {
+            this.scrollY = maxScroll + (this.scrollY - maxScroll) * 0.72;
+            if (this.scrollY < maxScroll + 0.05) this.scrollY = maxScroll;
+        }
+    }
+
     frame() {
         this.surface.clear();
 
         const viewH = this.systemData.height;
+        const lineHeight = 8;
+        const startLine = Math.max(0, Math.floor(this.scrollY / lineHeight));
+        const endLine = Math.min(
+            this.lines.length,
+            startLine + Math.ceil(viewH / lineHeight) + 1
+        );
 
-        for (let y = 0; y < viewH && y < this.lines.length; y++) {
-            const line = this.lines[y];
-            this.surface.drawText(line, y * 8, 0);
+        for (let i = startLine; i < endLine; i++) {
+            const line = this.lines[i] || "";
+            const y = (i * lineHeight) - Math.floor(this.scrollY);
+            if (y > -lineHeight && y < viewH) {
+                this.surface.drawText(line, y, 0);
+            }
         }
 
         // blinking cursor
@@ -152,9 +181,10 @@ export class TextEditProgram extends Program {
         if (this.hasFocus && showCursor) {
             const cursorLine = this.lines[this.cursorY] || "";
             const offset = this._textWidth(cursorLine.slice(0, this.cursorX));
+            const cursorY = (this.cursorY * lineHeight) - Math.floor(this.scrollY);
 
-            if (this.cursorY < viewH) {
-                this.surface.setPixel(this.cursorY, offset, true);
+            if (cursorY >= 0 && cursorY + lineHeight <= viewH) {
+                this.surface.drawLine(cursorY, offset, cursorY + lineHeight - 1, offset);
             }
         }
 
@@ -172,5 +202,60 @@ export class TextEditProgram extends Program {
         }
 
         return total;
+    }
+
+    _setCursorFromPixel(x, y) {
+        const lineHeight = 8;
+        const lineIndex = Math.floor((Math.max(0, y) + this.scrollY) / lineHeight);
+        this.cursorY = Math.max(0, Math.min(lineIndex, this.lines.length - 1));
+        const line = this.lines[this.cursorY] || "";
+        this.cursorX = this._pixelToCharIndex(line, x);
+        this._ensureCursorVisible();
+    }
+
+    _pixelToCharIndex(line, pixelX) {
+        let currentX = 0;
+        const targetX = Math.max(0, pixelX);
+
+        for (let i = 0; i < line.length; i++) {
+            const glyph = this.surface.glyphSet.get(line.charCodeAt(i));
+            const charWidth = glyph ? glyph[0].length + 1 : 6;
+            if (currentX + charWidth / 2 >= targetX) {
+                return i;
+            }
+            currentX += charWidth;
+        }
+
+        return line.length;
+    }
+
+    _ensureCursorVisible() {
+        const lineHeight = 8;
+        const cursorTop = this.cursorY * lineHeight;
+        const cursorBottom = cursorTop + lineHeight;
+
+        if (cursorTop < this.scrollY) {
+            this.scrollY = cursorTop;
+        } else if (cursorBottom > this.scrollY + this.systemData.height) {
+            this.scrollY = cursorBottom - this.systemData.height;
+        }
+
+        this._clampScroll();
+    }
+
+    _clampScroll() {
+        const maxScroll = this._maxScroll();
+        this.scrollY = Math.max(0, Math.min(this.scrollY, maxScroll));
+    }
+
+    _clampRubberScroll() {
+        const maxScroll = this._maxScroll();
+        const limit = Math.max(16, Math.floor(this.systemData.height * 0.35));
+        this.scrollY = Math.max(-limit, Math.min(this.scrollY, maxScroll + limit));
+    }
+
+    _maxScroll() {
+        const lineHeight = 8;
+        return Math.max(0, (this.lines.length * lineHeight) - this.systemData.height);
     }
 }

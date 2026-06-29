@@ -223,10 +223,22 @@ c
     }
 
     onScroll(deltaY) {
-        this.scrollY += deltaY / 10;
-        this.scrollY = Math.max(0, this.scrollY);
-        const maxScroll = Math.max(0, (this.lines.length * 8) - (this.systemData.height - 12));
-        this.scrollY = Math.min(this.scrollY, maxScroll);
+        const maxScroll = this._maxScroll();
+        const beyondBounds = this.scrollY < 0 || this.scrollY > maxScroll;
+        this.scrollY += (deltaY / 10) * (beyondBounds ? 0.35 : 1);
+        this._clampRubberScroll();
+    }
+
+    tickScrollPhysics() {
+        const maxScroll = this._maxScroll();
+
+        if (this.scrollY < 0) {
+            this.scrollY *= 0.72;
+            if (this.scrollY > -0.05) this.scrollY = 0;
+        } else if (this.scrollY > maxScroll) {
+            this.scrollY = maxScroll + (this.scrollY - maxScroll) * 0.72;
+            if (this.scrollY < maxScroll + 0.05) this.scrollY = maxScroll;
+        }
     }
 
     frame() {
@@ -237,7 +249,7 @@ c
         const lineHeight = 8;
 
         // Draw visible lines
-        const startLine = Math.floor(this.scrollY / lineHeight);
+        const startLine = Math.max(0, Math.floor(this.scrollY / lineHeight));
         const endLine = Math.min(
             this.lines.length,
             startLine + Math.ceil((viewH - textStartY) / lineHeight) + 1
@@ -312,5 +324,14 @@ c
         
         return line.length;
     }
-}
 
+    _maxScroll() {
+        return Math.max(0, (this.lines.length * 8) - (this.systemData.height - 12));
+    }
+
+    _clampRubberScroll() {
+        const maxScroll = this._maxScroll();
+        const limit = Math.max(16, Math.floor(this.systemData.height * 0.35));
+        this.scrollY = Math.max(-limit, Math.min(this.scrollY, maxScroll + limit));
+    }
+}
